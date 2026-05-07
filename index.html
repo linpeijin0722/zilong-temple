@@ -124,19 +124,19 @@
             
             const result = await response.json();
 
-            // 定義兩則訊息內容
             const msg1 = "台北子龍廟現場問事預約成功！";
             const msg2 = `您的預約資訊如下：\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}`;
 
             if (liff.isInClient()) {
-                // 分成兩個訊息物件放入陣列
                 await liff.sendMessages([
                     { type: 'text', text: msg1 },
                     { type: 'text', text: msg2 }
                 ]);
-                alert(`預約成功！您的順序是第 ${result.orderNum} 號。`);
+                // 移除原本會顯示網址的 alert，改用直接關閉視窗
+                // 信眾回到 LINE 視窗就會看到那兩則成功的訊息
                 liff.closeWindow();
             } else {
+                // 如果不是在 LINE 內開啟，才保留提示
                 alert("報名成功！\n\n" + msg1 + "\n\n" + msg2);
             }
         } catch (err) {
