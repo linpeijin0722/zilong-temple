@@ -54,7 +54,7 @@
         <select id="bookDate" required>
             <option value="">日期載入中...</option>
         </select>
-        <div class="hint">※ 若選項尚未顯示日期，請稍等 10-20 秒載入。</div>
+        <div class="hint">※ 若選項尚未顯示日期，請稍等 1-2 秒載入。</div>
         
         <button type="submit" id="submitBtn">確認報名</button>
     </form>
@@ -124,14 +124,20 @@
             
             const result = await response.json();
 
-            const message = `【台北子龍廟 現場問事預約成功】\n\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}\n\n⚠️ 預約提醒：\n※19:00 報到 / 19:30 開始辦事，請準時於預約日期前往。\n※登記的每一位都必須本人到場，並備妥農曆出生時辰、住址及問題。\n※過號排至最後；退駕恕不等候。\n※取消須 3 日前告知，當日無故缺席將停權預約 3 個月。\n祝平安順心。`;
+            // 定義兩則訊息內容
+            const msg1 = "台北子龍廟現場問事預約成功！";
+            const msg2 = `您的預約資訊如下：\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}`;
 
             if (liff.isInClient()) {
-                await liff.sendMessages([{ type: 'text', text: message }]);
+                // 分成兩個訊息物件放入陣列
+                await liff.sendMessages([
+                    { type: 'text', text: msg1 },
+                    { type: 'text', text: msg2 }
+                ]);
                 alert(`預約成功！您的順序是第 ${result.orderNum} 號。`);
                 liff.closeWindow();
             } else {
-                alert("報名成功！\n" + message);
+                alert("報名成功！\n\n" + msg1 + "\n\n" + msg2);
             }
         } catch (err) {
             alert("系統繁忙，請稍後再試！");
