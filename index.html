@@ -23,7 +23,7 @@
 <div class="container">
     <h2>台北子龍廟</h2>
     <div class="temple-sub">現場問事預約登記</div>
-    <div id="status">正在 LINE 登入...請稍後</div>
+    <div id="status">正在 LINE 登入...</div>
     
     <form id="appointmentForm" style="display:none;">
         <label>姓名</label>
@@ -51,7 +51,7 @@
         
         <label>預約日期</label>
         <select id="bookDate" required>
-            <option value="">日期載入中...</option>
+            <option value="">請選擇日期</option>
         </select>
         
         <button type="submit" id="submitBtn">確認報名</button>
@@ -60,7 +60,7 @@
 
 <script>
     const myLiffId = "2009988101-COQJNnc0"; 
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbz8RyDZeb_svcIXhnHKJ2kbmtUPdbdabCTfRMEE9V1j9vh3TGqToVdOY2WqXWHLWMO7/exec"; 
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbygNrfDnRkOIoblLnZpV8rVJ54K9fvwSaX0B8Lm7KtS7QQf7yLMOipkQHrHK-wkxK9w/exec"; 
 
     async function initializeLiff() {
         try {
@@ -74,7 +74,7 @@
                 fetchDates(); 
             }
         } catch (err) {
-            document.getElementById('status').innerText = "系統連線中...";
+            document.getElementById('status').style.display = 'none';
             document.getElementById('appointmentForm').style.display = 'block';
         }
     }
@@ -94,7 +94,7 @@
                 });
             }
         } catch (err) {
-            dateSelect.innerHTML = '<option value="">暫無開放日期</option>';
+            console.error(err);
         }
     }
 
@@ -120,7 +120,6 @@
             
             const result = await response.json();
 
-            // 格式化回報訊息
             const message = `【台北子龍廟 現場問事預約成功】\n\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}\n\n⚠️ 預約提醒：\n※19:00 報到 / 19:30 開始辦事，請準時於預約日期前往。\n※登記的每一位都必須本人到場，並備妥農曆出生時辰、住址及問題。\n※過號排至最後；退駕恕不等候。\n※取消須 3 日前告知，當日無故缺席將停權預約 3 個月。\n祝平安順心。`;
 
             if (liff.isInClient()) {
