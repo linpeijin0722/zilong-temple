@@ -1,10 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <title>台北子龍廟問事登記</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台北子龍廟 - 問事報名</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #d32f2f; text-align: center; margin-bottom: 25px; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { width: 100%; padding: 15px; background-color: #00b900; color: white; border: none; border-radius: 5px; margin-top: 30px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        button:active { background-color: #009e00; }
+        #status { text-align: center; color: #888; font-size: 14px; margin-bottom: 20px; }
+    </style>
 </head>
 <body>
-    <h1>台北子龍廟 - 問事報名測試</h1>
-    <p>如果你看到這個畫面，代表網頁設定成功了！</p>
+
+<div class="container">
+    <h2>台北子龍廟 問事報名</h2>
+    <div id="status">正在進行 LINE 登入...</div>
+    
+    <form id="appointmentForm" style="display:none;">
+        <label>姓名</label>
+        <input type="text" id="name" required placeholder="請輸入姓名">
+        
+        <label>電話</label>
+        <input type="tel" id="phone" required placeholder="請輸入聯絡電話">
+        
+        <label>地址</label>
+        <input type="text" id="address" required placeholder="請輸入現居地址">
+        
+        <label>預約日期</label>
+        <input type="date" id="bookDate" required>
+        
+        <button type="submit">確認提交並傳送訊息</button>
+    </form>
+</div>
+
+<script>
+    // 已經幫你填好你的專屬 LIFF ID 了
+    const myLiffId = "2009988101-COQJNnc0"; 
+
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: myLiffId });
+            if (liff.isLoggedIn()) {
+                document.getElementById('status').innerText = "✅ 已通過 LINE 認證";
+                document.getElementById('appointmentForm').style.display = 'block';
+            } else {
+                liff.login();
+            }
+        } catch (err) {
+            document.getElementById('status').innerText = "載入失敗，請稍後再試。";
+            console.error(err);
+        }
+    }
+
+    document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const address = document.getElementById('address').value;
+        const bookDate = document.getElementById('bookDate').value;
+
+        const message = `【台北子龍廟 問事預約成功】\n姓名：${name}\n電話：${phone}\n地址：${address}\n日期：${bookDate}\n\n※請準時於預約日期前往，感謝。`;
+
+        if (liff.isInClient()) {
+            liff.sendMessages([{
+                type: 'text',
+                text: message
+            }]).then(() => {
+                alert("預約成功！訊息已傳送到您的 LINE。");
+                liff.closeWindow();
+            }).catch((err) => {
+                alert("傳送失敗，請確認是否已允許傳送訊息權限。");
+                console.error(err);
+            });
+        } else {
+            alert("報名成功！但自動傳訊功能僅限在 LINE App 內使用。\n\n" + message);
+        }
+    });
+
+    initializeLiff();
+</script>
+
 </body>
 </html>
