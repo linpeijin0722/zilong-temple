@@ -6,55 +6,129 @@
     <title>台北子龍廟現場問事預約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #d32f2f; text-align: center; margin-bottom: 25px; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
-        input { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-        button { width: 100%; padding: 15px; background-color: #00b900; color: white; border: none; border-radius: 5px; margin-top: 30px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        button:active { background-color: #009e00; }
-        #status { text-align: center; color: #888; font-size: 14px; margin-bottom: 20px; }
+        /* 宮廟風格設計 */
+        :root {
+            --temple-red: #b22222; /* 硃砂紅 */
+            --temple-gold: #d4af37; /* 金色 */
+            --bg-paper: #fffcf0; /* 宣紙色 */
+        }
+        body { 
+            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; 
+            padding: 20px; 
+            background-color: #e0e0e0; 
+            background-image: radial-gradient(var(--temple-red) 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container { 
+            width: 100%;
+            max-width: 400px; 
+            background: var(--bg-paper); 
+            padding: 30px; 
+            border-radius: 10px; 
+            border: 3px solid var(--temple-gold);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            position: relative;
+        }
+        /* 裝飾邊角 */
+        .container::before {
+            content: "卍";
+            position: absolute;
+            top: 5px; left: 5px;
+            color: var(--temple-gold);
+            font-size: 12px;
+        }
+        h2 { 
+            color: var(--temple-red); 
+            text-align: center; 
+            margin-bottom: 5px;
+            letter-spacing: 3px;
+            border-bottom: 2px solid var(--temple-red);
+            padding-bottom: 10px;
+        }
+        .temple-sub {
+            text-align: center;
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        label { display: block; margin-top: 15px; font-weight: bold; color: var(--temple-red); }
+        input, select { 
+            width: 100%; padding: 12px; margin-top: 5px; 
+            box-sizing: border-box; border: 1px solid #ccc; 
+            border-radius: 5px; font-size: 16px;
+            background-color: white;
+        }
+        button { 
+            width: 100%; padding: 15px; 
+            background: linear-gradient(135deg, var(--temple-red), #8b0000);
+            color: white; border: 1px solid var(--temple-gold); 
+            border-radius: 5px; margin-top: 30px; 
+            font-size: 18px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 0 #5e0000;
+        }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #5e0000; }
+        #status { text-align: center; color: #888; font-size: 12px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>台北子龍廟 問事報名</h2>
-    <div id="status">正在進行 LINE 登入...</div>
+    <h2>台北子龍廟</h2>
+    <div class="temple-sub">問事預約登記表</div>
+    <div id="status">正在接通神明靈感 (LINE 登入)...</div>
     
     <form id="appointmentForm" style="display:none;">
         <label>姓名</label>
-        <input type="text" id="name" required placeholder="請輸入姓名">
+        <input type="text" id="name" required placeholder="請填寫信士/信女姓名">
         
         <label>電話</label>
-        <input type="tel" id="phone" required placeholder="請輸入聯絡電話">
+        <input type="tel" id="phone" required placeholder="請輸入電話">
         
-        <label>地址</label>
-        <input type="text" id="address" required placeholder="請輸入現居地址">
+        <label>問事項目</label>
+        <select id="reason" required>
+            <option value="">請選擇項目</option>
+            <option value="工作">工作</option>
+            <option value="收驚">收驚</option>
+            <option value="求符令">求符令</option>
+            <option value="運勢">運勢</option>
+            <option value="感情">感情</option>
+            <option value="婚姻">婚姻</option>
+            <option value="求子">求子</option>
+            <option value="身體">身體</option>
+            <option value="學業">學業</option>
+            <option value="外靈干擾">外靈干擾</option>
+            <option value="修持指引">修持指引</option>
+            <option value="其他">其他</option>
+        </select>
         
-        <label>預約日期</label>
-        <input type="date" id="bookDate" required>
+        <label>希望日期</label>
+        <select id="bookDate" required>
+            <!-- 這裡是你要改日期的地方 -->
+            <option value="">請選擇預約日期</option>
+            <option value="5月29日">5/29 (週五)</option>
+            <option value="6月5日">6/5 (週五)</option>
+        </select>
         
-        <button type="submit">確認提交並傳送訊息</button>
+        <button type="submit">虔誠提交</button>
     </form>
 </div>
 
 <script>
-    // 已經幫你填好你的專屬 LIFF ID 了
     const myLiffId = "2009988101-COQJNnc0"; 
 
     async function initializeLiff() {
         try {
             await liff.init({ liffId: myLiffId });
             if (liff.isLoggedIn()) {
-                document.getElementById('status').innerText = "✅ 已通過 LINE 認證";
+                document.getElementById('status').innerText = "● 已連線 LINE 帳號";
                 document.getElementById('appointmentForm').style.display = 'block';
             } else {
                 liff.login();
             }
         } catch (err) {
-            document.getElementById('status').innerText = "載入失敗，請稍後再試。";
-            console.error(err);
+            document.getElementById('status').innerText = "連線失敗";
         }
     }
 
@@ -63,29 +137,24 @@
         
         const name = document.getElementById('name').value;
         const phone = document.getElementById('phone').value;
-        const address = document.getElementById('address').value;
+        const reason = document.getElementById('reason').value;
         const bookDate = document.getElementById('bookDate').value;
 
-        const message = `【台北子龍廟 問事預約成功】\n姓名：${name}\n電話：${phone}\n地址：${address}\n日期：${bookDate}\n\n※請準時於預約日期前往，感謝。`;
+        const message = `【台北子龍廟 問事預約成功】\n\n信士/信女：${name}\n電話：${phone}\n項目：${reason}\n日期：${bookDate}\n\n※請準時於預約日期前往，祝平安順心。`;
 
         if (liff.isInClient()) {
-            liff.sendMessages([{
-                type: 'text',
-                text: message
-            }]).then(() => {
-                alert("預約成功！訊息已傳送到您的 LINE。");
+            liff.sendMessages([{ type: 'text', text: message }]).then(() => {
+                alert("預約成功！訊息已傳送。");
                 liff.closeWindow();
             }).catch((err) => {
-                alert("傳送失敗，請確認是否已允許傳送訊息權限。");
-                console.error(err);
+                alert("傳送失敗：" + err);
             });
         } else {
-            alert("報名成功！但自動傳訊功能僅限在 LINE App 內使用。\n\n" + message);
+            alert("報名成功！\n" + message);
         }
     });
 
     initializeLiff();
 </script>
-
 </body>
 </html>
