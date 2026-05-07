@@ -116,7 +116,9 @@
 </div>
 
 <script>
+<script>
     const myLiffId = "2009988101-COQJNnc0"; 
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbwsP6XGsdBgCD3YSNVLWX6F0-K7f1NJ38UHkdbWZJTjW7rOL4mkb1DvDfG45BBgf3dJ/exec"; 
 
     async function initializeLiff() {
         try {
@@ -132,29 +134,56 @@
         }
     }
 
-    document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+    document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // 按下按鈕後，顯示處理中，避免重複點擊
+        const btn = e.target.querySelector('button');
+        btn.disabled = true;
+        btn.innerText = "正在請示序號...";
         
         const name = document.getElementById('name').value;
         const phone = document.getElementById('phone').value;
         const reason = document.getElementById('reason').value;
         const bookDate = document.getElementById('bookDate').value;
+        
+        try {
+            const profile = await liff.getProfile();
 
-        const message = `【台北子龍廟 問事預約成功】\n\n信士/信女：${name}\n電話：${phone}\n項目：${reason}\n日期：${bookDate}\n\n※請準時於預約日期前往，祝平安順心。`;
+            const postData = {
+                name: name,
+                phone: phone,
+                reason: reason,
+                bookDate: bookDate,
+                lineId: profile.userId
+            };
 
-        if (liff.isInClient()) {
-            liff.sendMessages([{ type: 'text', text: message }]).then(() => {
-                alert("預約成功！訊息已傳送。");
-                liff.closeWindow();
-            }).catch((err) => {
-                alert("傳送失敗：" + err);
+            // 送資料到 Google 試算表
+            const response = await fetch(googleScriptUrl, {
+                method: "POST",
+                body: JSON.stringify(postData)
             });
-        } else {
-            alert("報名成功！\n" + message);
+            
+            const result = await response.json();
+            const orderNum = result.orderNum; // 這是從試算表算完回傳回來的序號
+
+            const message = `【台北子龍廟 問事預約成功】\n\n您的報名順序：第 ${orderNum} 號\n\n信士/信女：${name}\n電話：${phone}\n項目：${reason}\n日期：${bookDate}\n\n※請準時前往，祝平安順心。`;
+
+            // 傳送訊息回 LINE 聊天室
+            if (liff.isInClient()) {
+                await liff.sendMessages([{ type: 'text', text: message }]);
+                alert(`預約成功！您的順序是第 ${orderNum} 號`);
+                liff.closeWindow();
+            } else {
+                alert("報名成功！\n" + message);
+            }
+        } catch (err) {
+            alert("系統連線異常，請稍後再試！");
+            btn.disabled = false;
+            btn.innerText = "重新提交";
+            console.error(err);
         }
     });
 
     initializeLiff();
 </script>
-</body>
-</html>
