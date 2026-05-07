@@ -1,15 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台北子龍廟 - 問事報名系统</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        /* 宮廟風視覺設計 */
+        :root {
+            --temple-red: #b22222; 
+            --temple-gold: #d4af37; 
+            --bg-paper: #fffcf0; 
+        }
+        body { 
+            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; 
+            padding: 20px; 
+            background-color: #f4f4f4; 
+            display: flex;
+            justify-content: center;
+        }
+        .container { 
+            width: 100%;
+            max-width: 400px; 
+            background: var(--bg-paper); 
+            padding: 30px; 
+            border-radius: 10px; 
+            border: 2px solid var(--temple-gold);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+        }
+        h2 { 
+            color: var(--temple-red); 
+            text-align: center; 
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            border-bottom: 2px solid var(--temple-red);
+            padding-bottom: 10px;
+        }
+        .temple-sub {
+            text-align: center;
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+        label { display: block; margin-top: 15px; font-weight: bold; color: var(--temple-red); }
+        input, select { 
+            width: 100%; padding: 12px; margin-top: 5px; 
+            box-sizing: border-box; border: 1px solid #ccc; 
+            border-radius: 5px; font-size: 16px;
+            background-color: white;
+        }
+        button { 
+            width: 100%; padding: 15px; 
+            background-color: var(--temple-red);
+            color: white; border: none; 
+            border-radius: 5px; margin-top: 30px; 
+            font-size: 18px; font-weight: bold; cursor: pointer;
+        }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { text-align: center; color: #888; font-size: 14px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>台北子龍廟</h2>
+    <div class="temple-sub">現場問事預約登記</div>
+    <div id="status">正在 LINE 登入...請稍後</div>
+    
+    <form id="appointmentForm" style="display:none;">
+        <label>姓名</label>
+        <input type="text" id="name" required placeholder="請輸入完整姓名">
+        
+        <label>電話</label>
+        <input type="tel" id="phone" required placeholder="請輸入聯絡電話">
+        
+        <label>問事項目</label>
+        <select id="reason" required>
+            <option value="">請選擇問事項目</option>
+            <option value="工作">工作</option>
+            <option value="收驚">收驚</option>
+            <option value="求符令">求符令</option>
+            <option value="運勢">運勢</option>
+            <option value="感情">感情</option>
+            <option value="婚姻">婚姻</option>
+            <option value="求子">求子</option>
+            <option value="身體">身體</option>
+            <option value="學業">學業</option>
+            <option value="外靈干擾">外靈干擾</option>
+            <option value="修持指引">修持指引</option>
+            <option value="其他">其他</option>
+        </select>
+        
+        <label>希望日期</label>
+        <select id="bookDate" required>
+            <option value="">載入日期中...</option>
+        </select>
+        
+        <button type="submit" id="submitBtn">確認報名</button>
+    </form>
+</div>
+
 <script>
+    // 妳的專屬 ID 與 Google Script 網址
     const myLiffId = "2009988101-COQJNnc0"; 
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbygNrfDnRkOIoblLnZpV8rVJ54K9fvwSaX0B8Lm7KtS7QQf7yLMOipkQHrHK-wkxK9w/exec"; 
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxlWssdQt7JNew6hDIprFPq64aRQW75FwpTLBiO7-6-BcmLQxucsSBJs-QS208qDoEA/exec"; 
 
     async function initializeLiff() {
         try {
             await liff.init({ liffId: myLiffId });
             if (liff.isLoggedIn()) {
-                // 不管日期抓得如何，都要讓表單顯示出來
-                fetchDates(); 
+                // 同時執行：顯示表單 + 去抓日期
                 document.getElementById('status').style.display = 'none';
                 document.getElementById('appointmentForm').style.display = 'block';
+                fetchDates(); 
             } else {
                 liff.login();
             }
@@ -18,68 +122,11 @@
         }
     }
 
+    // 從 Google 試算表讀取日期清單
     async function fetchDates() {
         try {
-            // 設定 5 秒超時，避免 Google 回應太慢導致卡住
+            // 設定 8 秒超時防線
             const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-            const response = await fetch(googleScriptUrl, { signal: controller.signal });
-            const data = await response.json();
-            clearTimeout(id);
-
-            const dateSelect = document.getElementById('bookDate');
-            if (data.dates && data.dates.length > 0) {
-                dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
-                data.dates.forEach(date => {
-                    const opt = document.createElement('option');
-                    opt.value = date;
-                    opt.innerText = date;
-                    dateSelect.appendChild(opt);
-                });
-            }
-        } catch (err) {
-            console.error("日期抓取失敗，改用預設選項", err);
-            // 如果抓失敗了，這裡可以寫一個保底的預設日期，或是讓它維持原本 HTML 裡的樣子
-        }
-    }
-
-    document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerText = "處理中，請稍後...";
-        
-        const name = document.getElementById('name').value;
-        const phone = document.getElementById('phone').value;
-        const reason = document.getElementById('reason').value;
-        const bookDate = document.getElementById('bookDate').value;
-        
-        try {
-            const profile = await liff.getProfile();
-            const postData = { name, phone, reason, bookDate, lineId: profile.userId };
-
-            const response = await fetch(googleScriptUrl, {
-                method: "POST",
-                body: JSON.stringify(postData)
-            });
-            
-            const result = await response.json();
-            const message = `【台北子龍廟 問事預約成功】\n\n您的報名順序：第 ${result.orderNum} 號\n\n信士/信女：${name}\n項目：${reason}\n日期：${bookDate}\n\n※請準時前往，祝平安順心。`;
-
-            if (liff.isInClient()) {
-                await liff.sendMessages([{ type: 'text', text: message }]);
-                alert(`預約成功！您的順序是第 ${result.orderNum} 號。`);
-                liff.closeWindow();
-            } else {
-                alert("報名成功！\n" + message);
-            }
-        } catch (err) {
-            alert("提交失敗，請檢查網路後再試！");
-            btn.disabled = false;
-            btn.innerText = "確認報名";
-        }
-    });
-
-    initializeLiff();
-</script>
+            const
