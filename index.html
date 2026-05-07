@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台北子龍廟 - 問事報名系统</title>
+    <title>台北子龍廟 - 問事報名系統</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         :root { --temple-red: #b22222; --temple-gold: #d4af37; --bg-paper: #fffcf0; }
@@ -27,7 +27,7 @@
     
     <form id="appointmentForm" style="display:none;">
         <label>姓名</label>
-        <input type="text" id="name" required placeholder="請輸入完整姓名">
+        <input type="text" id="name" required placeholder="請輸入預約人姓名">
         
         <label>電話</label>
         <input type="tel" id="phone" required placeholder="請輸入聯絡電話">
@@ -49,9 +49,9 @@
             <option value="其他">其他</option>
         </select>
         
-        <label>希望日期</label>
+        <label>預約日期</label>
         <select id="bookDate" required>
-            <option value="">請選擇預約日期</option>
+            <option value="">日期載入中...</option>
         </select>
         
         <button type="submit" id="submitBtn">確認報名</button>
@@ -60,26 +60,21 @@
 
 <script>
     const myLiffId = "2009988101-COQJNnc0"; 
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbygNrfDnRkOIoblLnZpV8rVJ54K9fvwSaX0B8Lm7KtS7QQf7yLMOipkQHrHK-wkxK9w/exec"; 
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbz8RyDZeb_svcIXhnHKJ2kbmtUPdbdabCTfRMEE9V1j9vh3TGqToVdOY2WqXWHLWMO7/exec"; 
 
     async function initializeLiff() {
         try {
             await liff.init({ liffId: myLiffId });
-            
-            // 【重要優化】先顯示表單，不要讓畫面卡住
             document.getElementById('status').style.display = 'none';
             document.getElementById('appointmentForm').style.display = 'block';
 
             if (!liff.isLoggedIn()) {
                 liff.login();
             } else {
-                // 登入後再靜默去抓日期
                 fetchDates(); 
             }
         } catch (err) {
-            console.error("LIFF Init Error:", err);
-            // 萬一出錯也強制顯示表單（保險機制）
-            document.getElementById('status').style.display = 'none';
+            document.getElementById('status').innerText = "系統連線中...";
             document.getElementById('appointmentForm').style.display = 'block';
         }
     }
@@ -89,7 +84,6 @@
         try {
             const response = await fetch(googleScriptUrl);
             const data = await response.json();
-            
             if (data.dates && data.dates.length > 0) {
                 dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
                 data.dates.forEach(date => {
@@ -100,8 +94,7 @@
                 });
             }
         } catch (err) {
-            console.error("Fetch Dates Error:", err);
-            // 抓不到日期時，保留原本的選項不動作
+            dateSelect.innerHTML = '<option value="">暫無開放日期</option>';
         }
     }
 
@@ -109,17 +102,16 @@
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "正在處理中...";
+        btn.innerText = "預約傳送中...";
+        
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const reason = document.getElementById('reason').value;
+        const bookDate = document.getElementById('bookDate').value;
         
         try {
             const profile = await liff.getProfile();
-            const postData = {
-                name: document.getElementById('name').value,
-                phone: document.getElementById('phone').value,
-                reason: document.getElementById('reason').value,
-                bookDate: document.getElementById('bookDate').value,
-                lineId: profile.userId
-            };
+            const postData = { name, phone, reason, bookDate, lineId: profile.userId };
 
             const response = await fetch(googleScriptUrl, {
                 method: "POST",
@@ -127,7 +119,9 @@
             });
             
             const result = await response.json();
-            const message = `【台北子龍廟 問事預約成功】\n\n您的報名順序：第 ${result.orderNum} 號\n\n信士/信女：${postData.name}\n項目：${postData.reason}\n日期：${postData.bookDate}\n\n※請準時前往。`;
+
+            // 格式化回報訊息
+            const message = `【台北子龍廟 現場問事預約成功】\n\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}\n\n⚠️ 預約提醒：\n※19:00 報到 / 19:30 開始辦事，請準時於預約日期前往。\n※登記的每一位都必須本人到場，並備妥農曆出生時辰、住址及問題。\n※過號排至最後；退駕恕不等候。\n※取消須 3 日前告知，當日無故缺席將停權預約 3 個月。\n祝平安順心。`;
 
             if (liff.isInClient()) {
                 await liff.sendMessages([{ type: 'text', text: message }]);
