@@ -1,32 +1,79 @@
-// 處理網頁請求
-function doGet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("日期設定");
-  var range = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1);
-  var dates = range.getValues().map(function(row) { return row[0]; });
-  
-  return ContentService.createTextOutput(JSON.stringify({ "dates": dates }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+<script>
+    const myLiffId = "2009988101-COQJNnc0"; 
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbwsP6XGsdBgCD3YSNVLWX6F0-K7f1NJ38UHkdbWZJTjW7rOL4mkb1DvDfG45BBgf3dJ/exec"; 
 
-// 處理報名提交
-function doPost(e) {
-  var params = JSON.parse(e.postData.contents);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("工作表1");
-  if (!sheet) sheet = ss.getSheets()[0];
-  
-  var data = sheet.getDataRange().getValues();
-  var name = params.name, phone = params.phone, reason = params.reason, bookDate = params.bookDate, lineId = params.lineId;
-  
-  var orderCount = 1;
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][4] === bookDate) { orderCount++; }
-  }
-  
-  var newRow = [new Date(), name, phone, reason, bookDate, orderCount, lineId];
-  sheet.appendRow(newRow);
-  
-  return ContentService.createTextOutput(JSON.stringify({ "status": "success", "orderNum": orderCount }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: myLiffId });
+            if (liff.isLoggedIn()) {
+                // 1. 先抓取試算表中的日期
+                await fetchDates();
+                document.getElementById('status').style.display = 'none';
+                document.getElementById('appointmentForm').style.display = 'block';
+            } else {
+                liff.login();
+            }
+        } catch (err) {
+            document.getElementById('status').innerText = "系統初始化失敗";
+        }
+    }
+
+    // 新增：從 Google 試算表讀取日期
+    async function fetchDates() {
+        try {
+            const response = await fetch(googleScriptUrl);
+            const data = await response.json();
+            const dateSelect = document.getElementById('bookDate');
+            
+            // 清空舊選項，只留第一項
+            dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
+            
+            // 把試算表裡的日期填進去
+            data.dates.forEach(date => {
+                const opt = document.createElement('option');
+                opt.value = date;
+                opt.innerText = date;
+                dateSelect.appendChild(opt);
+            });
+        } catch (err) {
+            console.error("無法讀取日期", err);
+        }
+    }
+
+    document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "處理中，請稍後...";
+        
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const reason = document.getElementById('reason').value;
+        const bookDate = document.getElementById('bookDate').value;
+        
+        try {
+            const profile = await liff.getProfile();
+            const postData = { name, phone, reason, bookDate, lineId: profile.userId };
+
+            const response = await fetch(googleScriptUrl, {
+                method: "POST",
+                body: JSON.stringify(postData)
+            });
+            
+            const result = await response.json();
+            const message = `【台北子龍廟 問事預約成功】\n\n您的報名順序：第 ${result.orderNum} 號\n\n信士/信女：${name}\n項目：${reason}\n日期：${bookDate}\n\n※請準時前往，祝平安順心。`;
+
+            if (liff.isInClient()) {
+                await liff.sendMessages([{ type: 'text', text: message }]);
+                alert(`預約成功！您的順序是第 ${result.orderNum} 號。`);
+                liff.closeWindow();
+            }
+        } catch (err) {
+            alert("目前連線人數較多，請稍後再試！");
+            btn.disabled = false;
+            btn.innerText = "確認報名";
+        }
+    });
+
+    initializeLiff();
+</script>
