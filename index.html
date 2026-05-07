@@ -1,42 +1,46 @@
 <script>
     const myLiffId = "2009988101-COQJNnc0"; 
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbw3zY8c-G5LFQfp7w7lV05wCmY5Toop8i5EnI9Hw6bfBfGtG5u9zUu9wbQRPCZzf6XA/exec"; 
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbygNrfDnRkOIoblLnZpV8rVJ54K9fvwSaX0B8Lm7KtS7QQf7yLMOipkQHrHK-wkxK9w/exec"; 
 
     async function initializeLiff() {
         try {
             await liff.init({ liffId: myLiffId });
             if (liff.isLoggedIn()) {
-                // 1. 先抓取試算表中的日期
-                await fetchDates();
+                // 不管日期抓得如何，都要讓表單顯示出來
+                fetchDates(); 
                 document.getElementById('status').style.display = 'none';
                 document.getElementById('appointmentForm').style.display = 'block';
             } else {
                 liff.login();
             }
         } catch (err) {
-            document.getElementById('status').innerText = "系統初始化失敗";
+            document.getElementById('status').innerText = "系統初始化失敗，請重新開啟";
         }
     }
 
-    // 新增：從 Google 試算表讀取日期
     async function fetchDates() {
         try {
-            const response = await fetch(googleScriptUrl);
+            // 設定 5 秒超時，避免 Google 回應太慢導致卡住
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 5000);
+
+            const response = await fetch(googleScriptUrl, { signal: controller.signal });
             const data = await response.json();
+            clearTimeout(id);
+
             const dateSelect = document.getElementById('bookDate');
-            
-            // 清空舊選項，只留第一項
-            dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
-            
-            // 把試算表裡的日期填進去
-            data.dates.forEach(date => {
-                const opt = document.createElement('option');
-                opt.value = date;
-                opt.innerText = date;
-                dateSelect.appendChild(opt);
-            });
+            if (data.dates && data.dates.length > 0) {
+                dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
+                data.dates.forEach(date => {
+                    const opt = document.createElement('option');
+                    opt.value = date;
+                    opt.innerText = date;
+                    dateSelect.appendChild(opt);
+                });
+            }
         } catch (err) {
-            console.error("無法讀取日期", err);
+            console.error("日期抓取失敗，改用預設選項", err);
+            // 如果抓失敗了，這裡可以寫一個保底的預設日期，或是讓它維持原本 HTML 裡的樣子
         }
     }
 
@@ -67,9 +71,11 @@
                 await liff.sendMessages([{ type: 'text', text: message }]);
                 alert(`預約成功！您的順序是第 ${result.orderNum} 號。`);
                 liff.closeWindow();
+            } else {
+                alert("報名成功！\n" + message);
             }
         } catch (err) {
-            alert("目前連線人數較多，請稍後再試！");
+            alert("提交失敗，請檢查網路後再試！");
             btn.disabled = false;
             btn.innerText = "確認報名";
         }
