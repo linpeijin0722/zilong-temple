@@ -13,6 +13,7 @@
         .temple-sub { text-align: center; color: #555; font-size: 14px; margin-bottom: 25px; margin-top: 10px; }
         label { display: block; margin-top: 15px; font-weight: bold; color: var(--temple-red); }
         input, select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; background-color: white; }
+        .hint { font-size: 12px; color: #888; margin-top: 4px; font-weight: normal; }
         button { width: 100%; padding: 15px; background-color: var(--temple-red); color: white; border: none; border-radius: 5px; margin-top: 30px; font-size: 18px; font-weight: bold; cursor: pointer; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         #status { text-align: center; color: #888; font-size: 14px; margin-bottom: 20px; }
@@ -51,8 +52,9 @@
         
         <label>預約日期</label>
         <select id="bookDate" required>
-            <option value="">請選擇日期</option>
+            <option value="">日期載入中...</option>
         </select>
+        <div class="hint">※ 若選項尚未顯示日期，請稍等 10-20 秒載入。</div>
         
         <button type="submit" id="submitBtn">確認報名</button>
     </form>
@@ -92,9 +94,11 @@
                     opt.innerText = date;
                     dateSelect.appendChild(opt);
                 });
+            } else {
+                dateSelect.innerHTML = '<option value="">目前無開放日期</option>';
             }
         } catch (err) {
-            console.error(err);
+            dateSelect.innerHTML = '<option value="">載入失敗，請重新整理</option>';
         }
     }
 
