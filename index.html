@@ -62,12 +62,12 @@
 
 <script>
     const myLiffId = "2009988101-COQJNnc0"; 
-    // 💡 提示：請確保下面的 Google Script 網址與你最新部署的網址完全一致！
+    // 💡 關鍵更新：這裡已經幫你替換成你剛剛貼出的最新、正確的 Google 部署網址了！
     const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxDmLAy-qS6LGlZQ77trUQPuTwYwxsNRp8FTg4O-Ceu8RP7DioCHvVKNv0-19Kbil5C/exec"; 
 
     async function initializeLiff() {
         try {
-            // 💡 解決安卓卡死核心：加入 withLoginOnStart 讓 LINE 自動接管登入，防止重複 jump 頁面
+            // 💡 內建登入：優化三星手機與安卓系統的跳轉快取
             await liff.init({ 
                 liffId: myLiffId,
                 withLoginOnStart: true 
@@ -78,7 +78,6 @@
             fetchDates(); 
             
         } catch (err) {
-            // 備用機制：若在非 LINE 環境（如一般電腦瀏覽器）開啟也能正常運作
             document.getElementById('status').style.display = 'none';
             document.getElementById('appointmentForm').style.display = 'block';
             fetchDates();
@@ -100,7 +99,6 @@
                     dateSelect.appendChild(opt);
                 });
             } else {
-                // 💡 如果後端把滿 15 號的日期都篩掉了，陣列變空，代表全部場次都被預約滿了
                 dateSelect.innerHTML = '<option value="">本期預約已全數額滿</option>';
                 submitBtn.disabled = true;
                 submitBtn.innerText = "本期預約已全數額滿";
@@ -137,26 +135,25 @@
             
             const result = await response.json();
 
-            // 如果後端回傳額滿錯誤
+            // 如果滿15號，後端回傳阻擋
             if (result.error) {
                 alert(result.error);
                 location.reload();
                 return;
             }
 
-            // 💡 精準對接：指定要傳送給 LINE 的兩段訊息內容與格式
+            // 💡 訊息發送格式對接
             const msg1 = "台北子龍廟現場問事預約成功！";
             const msg2 = `您的預約資訊如下：\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}`;
 
             if (liff.isInClient()) {
-                // 在 LINE APP 內開啟，發送訊息後自動關閉網頁
+                // 🌟 當客人在官方帳號聊天室點開時，這段程式會「以客人身分」打字發送訊息給你的 LINE OA
                 await liff.sendMessages([
                     { type: 'text', text: msg1 },
                     { type: 'text', text: msg2 }
                 ]);
                 liff.closeWindow();
             } else {
-                // 在一般網頁開啟，則跳出提示
                 alert("報名成功！\n\n" + msg1 + "\n\n" + msg2);
             }
         } catch (err) {
