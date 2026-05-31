@@ -83,33 +83,47 @@
 
     async function fetchDates() {
         const dateSelect = document.getElementById('bookDate');
+        const submitBtn = document.getElementById('submitBtn');
         try {
             const response = await fetch(googleScriptUrl);
             const data = await response.json();
+            
             if (data.dates && data.dates.length > 0) {
                 dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
+                let allFull = true; // 用來檢查是否「每一天都額滿了」
+
                 data.dates.forEach(item => {
                     const opt = document.createElement('option');
                     
-                    // 檢查後端傳來的資料是純字串還是物件
+                    // 相容舊後端或新後端的資料格式
                     const dateValue = typeof item === 'object' ? item.date : item;
-                    const count = typeof item === 'object' ? item.count : 0;
+                    const maxOrder = typeof item === 'object' ? item.maxOrder : 0; // 當天目前最高到幾號
 
                     opt.value = dateValue;
 
-                    // 判斷是否滿 20 人
-                    if (typeof item === 'object' && count >= 20) {
+                    // 核心邏輯：若當天最高號碼已達 20 號（或以上），則鎖死
+                    if (typeof item === 'object' && maxOrder >= 20) {
                         opt.innerText = `${dateValue} (已額滿)`;
-                        opt.disabled = true; // 讓信眾看得到但不能選
-                        opt.style.color = '#aaa'; // 變成灰色
+                        opt.disabled = true;
+                        opt.style.color = '#aaa'; // 變成灰色外觀
                     } else {
                         opt.innerText = dateValue;
+                        allFull = false; // 只要有一間沒滿，就不是全滿
                     }
                     
                     dateSelect.appendChild(opt);
                 });
+
+                // 若全部天數皆額滿，按鈕鎖死並顯示全部額滿
+                if (allFull) {
+                    dateSelect.innerHTML = '<option value="">所有開放日期皆已額滿</option>';
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "本期預約已全數額滿";
+                }
+
             } else {
                 dateSelect.innerHTML = '<option value="">目前無開放日期</option>';
+                submitBtn.disabled = true;
             }
         } catch (err) {
             dateSelect.innerHTML = '<option value="">載入失敗，請重新整理</option>';
@@ -137,6 +151,13 @@
             });
             
             const result = await response.json();
+
+            // 如果後端回傳錯誤（例如剛好在送出那一刻滿了）
+            if (result.error) {
+                alert(result.error);
+                location.reload(); // 重新整理網頁
+                return;
+            }
 
             const msg1 = "台北子龍廟現場問事預約成功！";
             const msg2 = `您的預約資訊如下：\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}`;
