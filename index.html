@@ -88,10 +88,24 @@
             const data = await response.json();
             if (data.dates && data.dates.length > 0) {
                 dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
-                data.dates.forEach(date => {
+                data.dates.forEach(item => {
                     const opt = document.createElement('option');
-                    opt.value = date;
-                    opt.innerText = date;
+                    
+                    // 檢查後端傳來的資料是純字串還是物件
+                    const dateValue = typeof item === 'object' ? item.date : item;
+                    const count = typeof item === 'object' ? item.count : 0;
+
+                    opt.value = dateValue;
+
+                    // 判斷是否滿 20 人
+                    if (typeof item === 'object' && count >= 20) {
+                        opt.innerText = `${dateValue} (已額滿)`;
+                        opt.disabled = true; // 讓信眾看得到但不能選
+                        opt.style.color = '#aaa'; // 變成灰色
+                    } else {
+                        opt.innerText = dateValue;
+                    }
+                    
                     dateSelect.appendChild(opt);
                 });
             } else {
@@ -132,11 +146,8 @@
                     { type: 'text', text: msg1 },
                     { type: 'text', text: msg2 }
                 ]);
-                // 移除原本會顯示網址的 alert，改用直接關閉視窗
-                // 信眾回到 LINE 視窗就會看到那兩則成功的訊息
                 liff.closeWindow();
             } else {
-                // 如果不是在 LINE 內開啟，才保留提示
                 alert("報名成功！\n\n" + msg1 + "\n\n" + msg2);
             }
         } catch (err) {
