@@ -62,23 +62,26 @@
 
 <script>
     const myLiffId = "2009988101-COQJNnc0"; 
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbxI8B9MxSOvj2Eekkou6g3NVEpwN_t5JUuOnxry7OQmQ-OEmlDaTVgIQmQSgapa0vV0/exec"; 
+    // 💡 提示：請確保下面的 Google Script 網址與你最新部署的網址完全一致！
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbygNrfDnRkOIoblLnZpV8rVJ54K9fvwSaX0B8Lm7KtS7QQf7yLMOipkQHrHK-wkxK9w/exec"; 
 
     async function initializeLiff() {
         try {
-            // 💡 修正 1：在初始化時明確通知 LINE 我們需要發送訊息的權限
-            await liff.init({ liffId: myLiffId, withLoginOnStart: true });
+            // 💡 解決安卓卡死核心：加入 withLoginOnStart 讓 LINE 自動接管登入，防止重複 jump 頁面
+            await liff.init({ 
+                liffId: myLiffId,
+                withLoginOnStart: true 
+            });
+            
             document.getElementById('status').style.display = 'none';
             document.getElementById('appointmentForm').style.display = 'block';
-
-            if (!liff.isLoggedIn()) {
-                liff.login();
-            } else {
-                fetchDates(); 
-            }
+            fetchDates(); 
+            
         } catch (err) {
-            console.error(err);
-            document.getElementById('status').innerText = "LINE 初始化失敗，請在 LINE 內開啟連結";
+            // 備用機制：若在非 LINE 環境（如一般電腦瀏覽器）開啟也能正常運作
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('appointmentForm').style.display = 'block';
+            fetchDates();
         }
     }
 
@@ -88,41 +91,19 @@
         try {
             const response = await fetch(googleScriptUrl);
             const data = await response.json();
-            
             if (data.dates && data.dates.length > 0) {
                 dateSelect.innerHTML = '<option value="">請選擇預約日期</option>';
-                let allFull = true; 
-
-                data.dates.forEach(item => {
+                data.dates.forEach(date => {
                     const opt = document.createElement('option');
-                    
-                    const dateValue = typeof item === 'object' ? item.date : item;
-                    const maxOrder = typeof item === 'object' ? item.maxOrder : 0; 
-
-                    opt.value = dateValue;
-
-                    // 💡 修正 2：需求變更，將前端額滿鎖死上限同步修改為 15 號
-                    if (typeof item === 'object' && maxOrder >= 15) {
-                        opt.innerText = `${dateValue} (已額滿)`;
-                        opt.disabled = true;
-                        opt.style.color = '#aaa'; 
-                    } else {
-                        opt.innerText = dateValue;
-                        allFull = false; 
-                    }
-                    
+                    opt.value = date;
+                    opt.innerText = date;
                     dateSelect.appendChild(opt);
                 });
-
-                if (allFull) {
-                    dateSelect.innerHTML = '<option value="">所有開放日期皆已額滿</option>';
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = "本期預約已全數額滿";
-                }
-
             } else {
-                dateSelect.innerHTML = '<option value="">目前無開放日期</option>';
+                // 💡 如果後端把滿 15 號的日期都篩掉了，陣列變空，代表全部場次都被預約滿了
+                dateSelect.innerHTML = '<option value="">本期預約已全數額滿</option>';
                 submitBtn.disabled = true;
+                submitBtn.innerText = "本期預約已全數額滿";
             }
         } catch (err) {
             dateSelect.innerHTML = '<option value="">載入失敗，請重新整理</option>';
@@ -142,11 +123,11 @@
         
         try {
             let userId = "外部瀏覽器用戶";
-            if (liff.isInClient() || liff.isLoggedIn()) {
+            if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 userId = profile.userId;
             }
-            
+
             const postData = { name, phone, reason, bookDate, lineId: userId };
 
             const response = await fetch(googleScriptUrl, {
@@ -156,33 +137,30 @@
             
             const result = await response.json();
 
+            // 如果後端回傳額滿錯誤
             if (result.error) {
                 alert(result.error);
-                location.reload(); 
+                location.reload();
                 return;
             }
 
-            // 💡 修正 3：對齊你要求的 LINE 回傳訊息排版格式 (精準帶入第 X 號)
+            // 💡 精準對接：指定要傳送給 LINE 的兩段訊息內容與格式
             const msg1 = "台北子龍廟現場問事預約成功！";
             const msg2 = `您的預約資訊如下：\n預約日期：${bookDate}\n您的報名順序：第 ${result.orderNum} 號\n姓名：${name}\n項目：${reason}`;
 
             if (liff.isInClient()) {
-                // 檢查是否有發送訊息的權限
-                if (liff.isApiAvailable('shareTargetPicker') || liff.getOS() !== 'web') {
-                    await liff.sendMessages([
-                        { type: 'text', text: msg1 },
-                        { type: 'text', text: msg2 }
-                    ]);
-                    liff.closeWindow();
-                } else {
-                    alert("報名成功，但此裝置不支援自動發送 LINE 訊息！\n\n" + msg2);
-                }
+                // 在 LINE APP 內開啟，發送訊息後自動關閉網頁
+                await liff.sendMessages([
+                    { type: 'text', text: msg1 },
+                    { type: 'text', text: msg2 }
+                ]);
+                liff.closeWindow();
             } else {
+                // 在一般網頁開啟，則跳出提示
                 alert("報名成功！\n\n" + msg1 + "\n\n" + msg2);
             }
         } catch (err) {
-            // 💡 修正 4：不隨便彈出系統繁忙，而是顯示實際錯誤方便我們抓臭蟲
-            alert("發送失敗，原因: " + err.toString());
+            alert("系統繁忙，請稍後再試！");
             btn.disabled = false;
             btn.innerText = "確認報名";
         }
